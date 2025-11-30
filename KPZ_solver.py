@@ -1,6 +1,6 @@
 class KPZSolver:
     """
-    Generic solver for the d-dimensional KPZ equation:
+    Generic solver for the d-dimensional KPZ equation (For Computational Physics project):
 
         ∂h/∂t = ν ∇²h + (λ/2) |∇h|² + η(x, t)
 
@@ -57,7 +57,7 @@ class KPZSolver:
             rng = np.random.default_rng()
         self.rng = rng
 
-        # Normalize L and N to dimension-d tuples
+        # Normalize L and N to dimension-d tuples, makes life easier.
         if isinstance(L, (int, float)):
             self.L = (L,) * d
         else:
@@ -77,9 +77,7 @@ class KPZSolver:
         # Height field
         self.h = self._initialize_h(initial_condition)
 
-    # ----------------------------
-    # Initialization
-    # ----------------------------
+# Initialization
 
     def _setup_grid(self):
         """Create d-dimensional meshgrid."""
@@ -101,9 +99,8 @@ class KPZSolver:
         else:
             return np.array(init).reshape(shape)
 
-    # ----------------------------
-    # Spatial operators
-    # ----------------------------
+
+# Spatial operators
 
     def _laplacian(self, f):
         """
@@ -170,9 +167,8 @@ class KPZSolver:
         prefactor = self.noise_strength * np.sqrt(self.dt / cell_volume)
         return prefactor * xi
 
-    # ----------------------------
-    # Time stepping
-    # ----------------------------
+
+# Time stepping
 
     def step(self):
         """
@@ -197,9 +193,7 @@ class KPZSolver:
 
         self.h = self.h + self.dt * drift + noise
 
-    # ----------------------------
-    # Simulation control
-    # ----------------------------
+# Run
 
     def run(self, T, store_interval=None):
         """
@@ -222,9 +216,7 @@ class KPZSolver:
 
         return snapshots
 
-    # ----------------------------
-    # Utility
-    # ----------------------------
+# Utility
 
     def set_height(self, h_new):
         self.h = h_new.copy()
