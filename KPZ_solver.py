@@ -36,11 +36,11 @@ class KPZSolver:
         lam : float
             Nonlinear coupling λ.
         noise_strength : float
-            Noise amplitude.
+            Noise amplitude (see _noise_term for scaling).
         initial_condition : callable or ndarray
             Function h(x_vec) or array of size (N₁, ..., N_d).
         boundary : str
-            Boundary type ('periodic', 'dirichlet', etc.).
+            Boundary type ('periodic' supported; others raise NotImplementedError).
         rng : numpy.random.Generator
             Optional random number generator.
         """
@@ -52,6 +52,9 @@ class KPZSolver:
         self.lam = lam
         self.noise_strength = noise_strength
         self.boundary = boundary
+
+        if rng is None:
+            rng = np.random.default_rng()
         self.rng = rng
 
         # Normalize L and N to dimension-d tuples
@@ -104,28 +107,68 @@ class KPZSolver:
 
     def _laplacian(self, f):
         """
-        Compute the d-dimensional Laplacian of f.
-        Must be implemented by subclass or user.
+        Compute the d-dimensional Laplacian of f using central differences
+        with periodic boundary conditions.
         """
-        raise NotImplementedError("Implement a discretization for ∇²h.")
+        import numpy as np
+
+        if self.boundary != "periodic":
+            raise NotImplementedError("Only periodic boundary conditions are implemented.")
+
+        lap = np.zeros_like(f)
+        # Sum second derivatives along each axis
+        for axis, dx in enumerate(self.dx):
+            f_plus = np.roll(f, -1, axis=axis)
+            f_minus = np.roll(f, 1, axis=axis)
+            lap += (f_plus - 2.0 * f + f_minus) / (dx * dx)
+        return lap
 
     def _gradient(self, f):
         """
-        Compute the d-dimensional gradient of f.
-        
+        Compute the d-dimensional gradient of f using central differences
+        with periodic boundary conditions.
+
         Returns
         -------
         list of arrays
             [∂f/∂x₁, ∂f/∂x₂, ..., ∂f/∂x_d]
         """
-        raise NotImplementedError("Implement a discretization for ∇h.")
+        import numpy as np
+
+        if self.boundary != "periodic":
+            raise NotImplementedError("Only periodic boundary conditions are implemented.")
+
+        grads = []
+        for axis, dx in enumerate(self.dx):
+            f_plus = np.roll(f, -1, axis=axis)
+            f_minus = np.roll(f, 1, axis=axis)
+            grads.append((f_plus - f_minus) / (2.0 * dx))
+        return grads
 
     def _noise_term(self):
         """
-        Generate η(x,t) for d-dimensional KPZ.
-        Should scale like sqrt(dt * Π_i dx_i^(-1)) for white noise.
+        Generate η(x,t) for d-dimensional KPZ with spatially and temporally
+        white noise discretization.
+
+        For white noise with covariance ~ δ(x-x') δ(t-t'), a natural
+        discretization scales like:
+
+            η_discrete ~ N(0, noise_strength^2 * dt / V_cell)
+
+        where V_cell = ∏_i dx_i is the volume of a grid cell.
         """
-        raise NotImplementedError("Implement noise term η(x,t).")
+        import numpy as np
+
+        cell_volume = 1.0
+        for dx in self.dx:
+            cell_volume *= dx
+
+        # Standard normal field
+        xi = self.rng.standard_normal(self.N)
+
+        # Scale to get correct variance
+        prefactor = self.noise_strength * np.sqrt(self.dt / cell_volume)
+        return prefactor * xi
 
     # ----------------------------
     # Time stepping
@@ -133,10 +176,26 @@ class KPZSolver:
 
     def step(self):
         """
-        Advance by one time step using a choice of numerical scheme
-        (Euler–Maruyama, semi-implicit, spectral, etc.).
+        Advance by one time step using explicit Euler–Maruyama:
+
+            h_{n+1} = h_n + dt [ ν ∇²h + (λ/2) |∇h|² ] + η(x,t)
+
+        where η(x,t) is drawn independently at each step.
         """
-        raise NotImplementedError("Implement update rule for KPZ step.")
+        import numpy as np
+
+        lap_h = self._laplacian(self.h)
+        grads = self._gradient(self.h)
+
+        # |∇h|² = sum_i (∂h/∂x_i)^2
+        grad_sq = np.zeros_like(self.h)
+        for g in grads:
+            grad_sq += g * g
+
+        drift = self.nu * lap_h + 0.5 * self.lam * grad_sq
+        noise = self._noise_term()
+
+        self.h = self.h + self.dt * drift + noise
 
     # ----------------------------
     # Simulation control
@@ -172,3 +231,5 @@ class KPZSolver:
 
     def get_height(self):
         return self.h.copy()
+
+
