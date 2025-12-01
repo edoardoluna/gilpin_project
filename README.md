@@ -7,4 +7,4 @@ Planned structure of the repository codes will be
 /notebooks
 /data
 
-We will create a stochastic PDE solver for handling the KPZ equation in d=1,2,3,4, and then proceed to probe the statistical properties of it in a jupyter notebook. The work will be split between the SPDE solver, stochastic simulations of other systems in the universality class, and data analysis. 
+We will create a stochastic PDE solver for handling the KPZ equation in d=1,2, and then proceed to probe the statistical properties of it in a jupyter notebook. The work will be split between the SPDE solver, stochastic simulations of other systems in the universality class, and data analysis. 
