@@ -146,14 +146,14 @@ def plot_gradient_magnitude(h2d, t1_vals, t2_vals, title="|∇h| Heatmap"):
 
 
 
-def animate_1d(t_vals_list, h_vals_list, title="1D Line Animation", interval=200):
+def animate_1d(t_vals_list, h_vals_list, title="1D Line Animation", interval=200, xlabel="t (parametric)"):
     fig, ax = plt.subplots(figsize=(8,4))
     line, = ax.plot([], [], lw=2)
     ax.set_xlim(t_vals_list[0].min(), t_vals_list[0].max())
     y_min = min([h.min() for h in h_vals_list])
     y_max = max([h.max() for h in h_vals_list])
     ax.set_ylim(y_min, y_max)
-    ax.set_xlabel("t (parametric)")
+    ax.set_xlabel(xlabel)
     ax.set_ylabel("h")
     ax.set_title(title)
     ax.grid(True)
@@ -191,7 +191,8 @@ def animate_2d_heatmap(h_planes_list, t1_vals, t2_vals, title="2D Heatmap Animat
     plt.show()
     return anim
 
-def animate_3d_surface(h_planes_list, t1_vals, t2_vals, title="3D Surface Animation", interval=200):
+def animate_3d_surface(h_planes_list, t1_vals, t2_vals, title="3D Surface Animation", interval=200, xlabel="t1", ylabel = "t2"):
+    h_planes_list = [np.array(h) for h in h_planes_list]
     fig = plt.figure(figsize=(7,6))
     ax = fig.add_subplot(111, projection='3d')
     T1, T2 = np.meshgrid(t1_vals, t2_vals, indexing='ij')
@@ -201,8 +202,8 @@ def animate_3d_surface(h_planes_list, t1_vals, t2_vals, title="3D Surface Animat
     ax.set_zlim(z_min, z_max)
     ax.set_xlim(t1_vals.min(), t1_vals.max())
     ax.set_ylim(t2_vals.min(), t2_vals.max())
-    ax.set_xlabel("t1 along v1")
-    ax.set_ylabel("t2 along v2")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
     ax.set_zlabel("h")
     ax.set_title(title)
 
